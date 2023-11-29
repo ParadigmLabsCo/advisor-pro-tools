@@ -1,11 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { FormAccordion } from "../components/FormAccordion";
+import RetirementChart from "../components/RetirementChart";
+
 import {
   Form,
   FormControl,
@@ -15,9 +20,16 @@ import {
   FormLabel,
   FormMessage,
 } from "../components/ui/form";
-import { Input } from "../components/ui/input";
-import { useState } from "react";
-import { FormAccordion } from "../components/FormAccordion";
+
+import {
+  calculateAnnualSavingsUntilRetirement,
+  calculateFutureSavings,
+  calculateRequiredSavings,
+  calculateYearlyDrawdown,
+  drawdownSavingsAfterRetirement,
+  solveForMonthlyContribution,
+} from "./utils";
+
 const formSchema = z.object({
   currentAge: z.string(),
   preTaxIncome: z.string(),
@@ -35,6 +47,8 @@ const formSchema = z.object({
 export default function RetirementCalculator() {
   const [futureSavings, setFutureSavings] = useState(0);
   const [requiredSavings, setRequiredSavings] = useState(0);
+  const [savingsData, setSavingsData] = useState([]);
+  const [needsData, setNeedsData] = useState([]);
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,62 +67,9 @@ export default function RetirementCalculator() {
     },
   });
 
-  // Calculate the future value of the current savings and the future value of the annuity (monthly contributions)
-  function calculateFutureSavings(
-    currentSavings: number,
-    monthlyContribution: number,
-    currentAge: number,
-    retirementAge: number,
-    annualReturn: number,
-    annualIncomeIncrease: number,
-  ) {
-    const monthlyReturn = annualReturn / 12 / 100;
-    let futureSavings =
-      currentSavings *
-      Math.pow(1 + monthlyReturn, (retirementAge - currentAge) * 12);
-    let futureContributions = 0;
-
-    for (let i = 0; i < (retirementAge - currentAge) * 12; i++) {
-      // Increase the contribution based on the annual income increase
-      if (i > 0 && i % 12 === 0) {
-        monthlyContribution *= 1 + annualIncomeIncrease / 100;
-      }
-      futureContributions +=
-        monthlyContribution *
-        Math.pow(1 + monthlyReturn, (retirementAge - currentAge) * 12 - i - 1);
-    }
-
-    futureSavings += futureContributions;
-    return futureSavings;
-  }
-
-  // Calculate the present value of the retirement expenses, increasing due to inflation
-  function calculateRequiredSavings(
-    monthlyExpensesAtRetirement: number,
-    retirementAge: number,
-    lifeExpectancy: number,
-    annualInflation: number,
-    postRetirementReturn: number,
-  ) {
-    const monthlyInflation = annualInflation / 12 / 100;
-    const monthlyReturn = postRetirementReturn / 12 / 100;
-    let requiredSavings = 0;
-
-    for (let i = 0; i < (lifeExpectancy - retirementAge) * 12; i++) {
-      monthlyExpensesAtRetirement *= 1 + monthlyInflation;
-      requiredSavings +=
-        monthlyExpensesAtRetirement / Math.pow(1 + monthlyReturn, i);
-    }
-
-    return requiredSavings;
-  }
-
-  // Inflate the current monthly expenses to the retirement age
-
   function onSubmit(values: z.infer<typeof formSchema>) {
     // Do something with the form values.
     // ✅ This will be type-safe and validated.
-    console.log("values", values);
     const {
       currentAge,
       currentSavings,
@@ -121,7 +82,7 @@ export default function RetirementCalculator() {
       lifeExpectancy,
       annualInflation,
     } = values;
-    const retirementAge = parseInt(retirementAgeInput, 10) - 1;
+    const retirementAge = parseInt(retirementAgeInput, 10);
     const inflatedMonthlyExpenses =
       parseInt(monthlyExpense, 10) *
       Math.pow(
@@ -129,31 +90,95 @@ export default function RetirementCalculator() {
         retirementAge - parseInt(currentAge, 10),
       );
 
-    setFutureSavings(
-      calculateFutureSavings(
-        parseInt(currentSavings, 10),
-        parseInt(monthlyContribution, 10),
-        parseInt(currentAge, 10),
-        retirementAge,
-        parseInt(preRetirementReturn, 10),
-        parseInt(annualIncomeIncrease, 10),
-      ),
+    const calculatedFutureSavings = calculateFutureSavings(
+      parseInt(currentSavings, 10),
+      parseInt(monthlyContribution, 10),
+      parseInt(currentAge, 10),
+      retirementAge,
+      parseInt(preRetirementReturn, 10),
+      parseInt(annualIncomeIncrease, 10),
     );
-    setRequiredSavings(
-      calculateRequiredSavings(
-        inflatedMonthlyExpenses,
-        retirementAge,
-        parseInt(lifeExpectancy, 10),
-        parseInt(annualInflation, 10),
-        parseInt(postRetirementReturn, 10),
-      ),
-    );
-  }
 
-  console.log(`Projected Savings at Retirement: $${futureSavings.toFixed(2)}`);
-  console.log(
-    `Total Retirement Savings Needed: $${requiredSavings.toFixed(2)}`,
-  );
+    const calculatedRequiredSavings = calculateRequiredSavings(
+      inflatedMonthlyExpenses,
+      retirementAge,
+      parseInt(lifeExpectancy, 10),
+      parseInt(annualInflation, 10),
+      parseInt(postRetirementReturn, 10),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const annualSavings = calculateAnnualSavingsUntilRetirement(
+      parseInt(currentSavings, 10),
+      parseInt(monthlyContribution, 10),
+      parseInt(currentAge, 10),
+      retirementAge,
+      parseInt(preRetirementReturn, 10),
+      parseInt(annualIncomeIncrease, 10),
+    );
+
+    // Get the savings amount at retirement to use as the starting amount for drawdown
+    const savingsAtRetirement = annualSavings[retirementAge - 1];
+
+    // Drawdown savings after retirement
+    const drawdownSavings = drawdownSavingsAfterRetirement(
+      savingsAtRetirement, // startingSavings
+      retirementAge, // retirementAge
+      parseInt(lifeExpectancy, 10), // lifeExpectancy
+      inflatedMonthlyExpenses, // monthlyExpensesAtRetirement
+      parseInt(annualInflation, 10), // annualInflation
+      parseInt(postRetirementReturn, 10), // postRetirementReturn
+    );
+
+    const monthlyContributionRequired = solveForMonthlyContribution(
+      parseInt(currentSavings, 10),
+      calculatedRequiredSavings,
+      parseInt(currentAge, 10),
+      retirementAge,
+      parseInt(preRetirementReturn, 10),
+      parseInt(annualIncomeIncrease, 10),
+    );
+
+    const requiredAnnualSavings = calculateAnnualSavingsUntilRetirement(
+      parseInt(currentSavings, 10),
+      monthlyContributionRequired,
+      parseInt(currentAge, 10),
+      retirementAge + 1,
+      parseInt(preRetirementReturn, 10),
+      parseInt(annualIncomeIncrease, 10),
+    );
+
+    const requiredSavingsAtRetirement = requiredAnnualSavings[retirementAge];
+
+    const yearlyDrawdown = calculateYearlyDrawdown(
+      requiredSavingsAtRetirement,
+      retirementAge,
+      parseInt(lifeExpectancy, 10),
+      inflatedMonthlyExpenses,
+      parseInt(annualInflation, 10),
+      parseInt(postRetirementReturn, 10),
+    );
+
+    const completeSavingsProjection = { ...annualSavings, ...drawdownSavings };
+    const completeRequiresSavingsProjection = {
+      ...requiredAnnualSavings,
+      ...yearlyDrawdown,
+    };
+
+    const calculatedFutureSavingsArray = Object.entries(
+      completeSavingsProjection,
+    ).map(([age, value]) => ({ age: parseInt(age, 10), value }));
+
+    const calculatedRequiredSavingsArray = Object.entries(
+      completeRequiresSavingsProjection,
+    ).map(([age, value]) => ({ age: parseInt(age, 10), value }));
+
+    setSavingsData(calculatedFutureSavingsArray);
+    setNeedsData(calculatedRequiredSavingsArray);
+
+    setFutureSavings(calculatedFutureSavings);
+    setRequiredSavings(calculatedRequiredSavings);
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
@@ -347,6 +372,10 @@ export default function RetirementCalculator() {
       </Form>
       <p>Projected savings at retirement: ${futureSavings.toFixed(2)}</p>
       <p>Total retirement savings needed: ${requiredSavings.toFixed(2)}</p>
+      <div className="w-full">
+        <h1>Retirement Savings Plan</h1>
+        <RetirementChart savingsData={savingsData} needsData={needsData} />
+      </div>
     </main>
   );
 }
