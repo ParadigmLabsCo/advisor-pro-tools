@@ -10,6 +10,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { FormAccordion } from "../components/FormAccordion";
 import RetirementChart from "../components/RetirementChart";
+import { currencyFormat } from "../lib/utils";
 
 import {
   Form,
@@ -181,200 +182,222 @@ export default function RetirementCalculator() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="mb-10 space-y-8"
-        >
-          <FormField
-            control={form.control}
-            name="currentAge"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current age</FormLabel>
-                <FormControl>
-                  <Input placeholder="35" {...field} />
-                </FormControl>
-                {/* <FormDescription>
+    <main className="flex min-h-screen flex-col items-center">
+      <div className="mt-40 flex w-full max-w-7xl">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="mb-10 min-w-[350px] space-y-8 bg-stone-200 px-10 py-8"
+          >
+            <h4 className="text-md font-semibold">Retirement details</h4>
+            <FormField
+              control={form.control}
+              name="currentAge"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current age</FormLabel>
+                  <FormControl>
+                    <Input placeholder="35" {...field} />
+                  </FormControl>
+                  {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="preTaxIncome"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Annual pre-tax income</FormLabel>
-                <FormControl>
-                  <Input placeholder="$60,000" {...field} />
-                </FormControl>
-                {/* <FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="preTaxIncome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Annual pre-tax income</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$60,000" {...field} />
+                  </FormControl>
+                  {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="currentSavings"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Current retirement savings</FormLabel>
-                <FormControl>
-                  <Input placeholder="$30,000" {...field} />
-                </FormControl>
-                {/* <FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="currentSavings"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current retirement savings</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$30,000" {...field} />
+                  </FormControl>
+                  {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="monthlyContribution"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Monthly contribution</FormLabel>
-                <FormControl>
-                  <Input placeholder="$1343" {...field} />
-                </FormControl>
-                {/* <FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="monthlyContribution"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monthly contribution</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$1343" {...field} />
+                  </FormControl>
+                  {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="monthlyExpense"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Monthly budget in retirement</FormLabel>
-                <FormControl>
-                  <Input placeholder="$3000" {...field} />
-                </FormControl>
-                {/* <FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="monthlyExpense"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Monthly budget in retirement</FormLabel>
+                  <FormControl>
+                    <Input placeholder="$3000" {...field} />
+                  </FormControl>
+                  {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormAccordion label="Advanced details">
-            <div className="space-y-8">
-              <FormField
-                control={form.control}
-                name="retirementAgeInput"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Retirement age</FormLabel>
-                    <FormControl>
-                      <Input placeholder="67" {...field} />
-                    </FormControl>
-                    {/* <FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormAccordion label="Advanced details">
+              <div className="space-y-8">
+                <FormField
+                  control={form.control}
+                  name="retirementAgeInput"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Retirement age</FormLabel>
+                      <FormControl>
+                        <Input placeholder="67" {...field} />
+                      </FormControl>
+                      {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lifeExpectancy"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Life Expectancy</FormLabel>
-                    <FormControl>
-                      <Input placeholder="95" {...field} />
-                    </FormControl>
-                    {/* <FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lifeExpectancy"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Life Expectancy</FormLabel>
+                      <FormControl>
+                        <Input placeholder="95" {...field} />
+                      </FormControl>
+                      {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="preRetirementReturn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pre-retirement rate of return</FormLabel>
-                    <FormControl>
-                      <Input placeholder="6%" {...field} />
-                    </FormControl>
-                    {/* <FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="preRetirementReturn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pre-retirement rate of return</FormLabel>
+                      <FormControl>
+                        <Input placeholder="6%" {...field} />
+                      </FormControl>
+                      {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="postRetirementReturn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Post-retirement rate of return</FormLabel>
-                    <FormControl>
-                      <Input placeholder="5%" {...field} />
-                    </FormControl>
-                    {/* <FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="postRetirementReturn"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Post-retirement rate of return</FormLabel>
+                      <FormControl>
+                        <Input placeholder="5%" {...field} />
+                      </FormControl>
+                      {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="annualInflation"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Inflation rate</FormLabel>
-                    <FormControl>
-                      <Input placeholder="$3000" {...field} />
-                    </FormControl>
-                    {/* <FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="annualInflation"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Inflation rate</FormLabel>
+                      <FormControl>
+                        <Input placeholder="$3000" {...field} />
+                      </FormControl>
+                      {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="annualIncomeIncrease"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Annual income increase</FormLabel>
-                    <FormControl>
-                      <Input placeholder="2%" {...field} />
-                    </FormControl>
-                    {/* <FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="annualIncomeIncrease"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Annual income increase</FormLabel>
+                      <FormControl>
+                        <Input placeholder="2%" {...field} />
+                      </FormControl>
+                      {/* <FormDescription>
                   This is your public display name.
                 </FormDescription> */}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </FormAccordion>
+            <Button type="submit">Submit</Button>
+          </form>
+        </Form>
+        <div className="ml-6 w-full border px-10 pt-6">
+          <div className="w-full pb-12">
+            <h4 className="text-md mb-8 font-semibold">
+              Retirement Savings at age 67
+            </h4>
+            <div className="flex">
+              <div className="pr-12">
+                <p>What you'll have</p>
+                <p className="mt-2 text-2xl font-semibold">
+                  {currencyFormat(futureSavings)}
+                </p>
+              </div>
+              <div className="border-l pl-12">
+                <p>What you'll need</p>
+                <p className="mt-2 text-2xl font-semibold">
+                  {currencyFormat(requiredSavings)}
+                </p>
+              </div>
             </div>
-          </FormAccordion>
-          <Button type="submit">Submit</Button>
-        </form>
-      </Form>
-      <p>Projected savings at retirement: ${futureSavings.toFixed(2)}</p>
-      <p>Total retirement savings needed: ${requiredSavings.toFixed(2)}</p>
-      <div className="w-full">
-        <h1>Retirement Savings Plan</h1>
-        <RetirementChart savingsData={savingsData} needsData={needsData} />
+          </div>
+          <div className="w-full border-t pt-8">
+            <h1 className="mb-8">Retirement Savings Plan</h1>
+            <RetirementChart savingsData={savingsData} needsData={needsData} />
+          </div>
+        </div>
       </div>
     </main>
   );
